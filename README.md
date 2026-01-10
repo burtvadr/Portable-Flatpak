@@ -96,9 +96,11 @@ Script Error" "File system unsupported, Move into a linux File system drive!" -u
 **user A — Data Persistence**
 * **Trigger:** Presence of [DATA] and absence of [BIN]
 * **results:** Keep only user saves/configuration portable; binaries remain on the host. Binaries are retrievable from Flathub.
+
 **user A.2 — Binary Offloading**
 * **Trigger:** Presence of [DATA] And presence [BIN]
 * **results:** Store both binaries and user data on the portable directory. 
+
 **user C — Click and run**
 * **Trigger:** absence of [DATA] And absence of [BIN] 
 * **results:** effectively just installs the application and executes it
