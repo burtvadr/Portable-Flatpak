@@ -78,14 +78,14 @@ this effectively work as a program that just installs flatpak, adds flathub, ins
 
 ### 3.3 limitations
 
-** Hard Constraints:**
+**Hard Constraints:**
 * The user should never rename or move the folder while the app is running.
 
-** soft Constraints:**
+**soft Constraints:**
 * [DATA] folders cannot be searched more than two directories deep (e.g., `[Portable Path]/[things]/[stuff]/[AppID]` will not be searched by default).
-* naturally avoid ntfs or others unsupported file systems, sending a notify-send
+* naturally avoid ntfs or others unsupported file systems, sending 
 ```
-Error" "File system unsupported, Move into a linux File system drive!" -u critical 
+notify-send "Error" "File system unsupported, Move into a linux File system drive\!" -u critical 
 ```
 (optional, but no ntfs by default) 
 
