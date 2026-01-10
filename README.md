@@ -175,7 +175,7 @@ this also applies for custom desktop file and icons
 [Portable Application Folder]/   
 ├── runner                      
 ├── stuff                    
-├── icon.png        #should work with any name, any image format, with or without .png .svg. ico. .jpg .jpeg or .webp          
+├── icon        #its a svg, should work with any iamge format, never depend exclusively on detecting the file extension, .png .svg. ico. .jpg .jpeg or .webp  
 ├── binaries               
 └── data                
 ```
@@ -189,7 +189,7 @@ or for a --user install at
 [Portable Application Folder]/   
 ├── runner                         
 ├── stuff                    
-├── icon.png        #should work with any name, any image format, with or without .png .svg. ico. .jpg .jpeg or .webp          
+├── icon.png       #its a png, should work with any iamge format, never depend exclusively on detecting the file extension, .png .svg. ico. .jpg .jpeg or .webp   
 ├── custom.desktop                 
 ├── binaries/                     
 └── data/                          
@@ -218,7 +218,9 @@ or system wide at
    * the system computes its current absolute path (for example `/media/user/USB/Games/Osu`).
    * attempt to detect/check the [AppID],
    * mark as a valid Flathub [AppID] if it contains at least 3 dot-separated segments, regardless of what the segments contain.
-   * prioritize if a [AppID] is on located on the `runner` name, if it renamed to [AppID] ( or [AppID].py or [AppID].exe or [AppID].sh depending on how this is implemented )
+   * prioritize if a [AppID] is on located on the `runner` name, if if the `runner` is renamed to [AppID], or [AppID].py or [AppID].sh
+   * aware of examples like org.telegram.desktop, .desktop is not a extension, its part of the [AppID],
+   * aware of examples like org.telegram.desktop.sh or org.telegram.desktop.py, or even just org.telegram.desktop without any extension
    * if a [AppID] is found conflicting with [AppID] found in directories names, just abort,
 ```
 burtjo@Linux:/SSDpkg/packages/[AppID]$ tree -a -L 3
