@@ -14,7 +14,7 @@ The current concept of “portable software” in the Linux ecosystem is fragmen
 
 This approach provides a pragmatic mechanism to encapsulate both application execution logic and persistent user data — and optionally binaries — into a single movable directory. The folder is driven by an embedded master logic that acts as middleware between the user and Flatpak. The launcher detects location and names and launches the application.
 
-This is a tooling-first, practical example intended to work today rather than a formal standard, but it can inform future Flatpak improvements designed with portability in mind and flexibility in mind.
+This is a tooling-first, practical example intended to work today rather than a formal standard, but it can inform future Flatpak improvements designed with portability and flexibility in mind 
 ---
 
 ## 2. Problem: Flatpak Limitation
