@@ -37,7 +37,7 @@ These constraints motivated the practical approach described below.
 
 ## 3. My Solution: The ideal portable application 
 
-Use a flexible logic driven that acts as middleware between the user and Package, on this case Flatpak. your one click* `runner` is a engine: it detects its own location, handles names, new locations, detects use cases and launches the application. you can name the `runner` whatever you want
+Use a flexible logic that acts as middleware between the user and Package, on this case Flatpak. your one click* `runner` is a engine: it detects its own location, handles names, new locations, detects use cases and launches the application. you can name the `runner` whatever you want
 
 ### 3.1 Core Philosophy
 
@@ -67,7 +67,14 @@ or, in a minimal layout:
 ├── stuff                           # (Optional) anything the user would want to keep; should never break anything # RENAMABLE
 └── [AppID]/                        # (On by default) Persistent User Data # RENAMABLE
 ```
-
+if you want to go even more minimal
+```
+[Portable Application Folder]/      # RENAMABLE
+├── Brave                           # AppID=com.brave.Browser one-click run application (Entry Point) # RENAMABLE
+├── Discord                         # AppID=com.discordapp.Discord one-click run application (Entry Point) # RENAMABLE
+├── Steam                           # AppID=com.valvesoftware.Steam one-click run application (Entry Point) # RENAMABLE
+```
+this effectively work as a script that just installs flatpak, adds flathub, installs the aplication by its [AppID] and run your program with one click
 
 ### 3.3 limitations
 
@@ -334,7 +341,7 @@ rm -rf [DATA]/.ld.so
 
 
 
-
+´´´
 
 # PORTABLE FLATPAK LAUNCHER 
 
@@ -373,6 +380,7 @@ rm -rf [DATA]/.ld.so
 
 LANGAGE_INFERRING_[BIN]=(bin,binary,binaries,binarios,Bin,Binary,Binaries,Binarios,BIN,BINARY,BINARIES,BINARIOS)
 LANGAGE_INFERRING_[DATA]=(dat,data,dados,Dat,Data,Dados,DAT,DATA,DADOS)
+´´´
 
 ## 5. Practical Considerations & Edge Cases
 
