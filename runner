@@ -7,7 +7,7 @@
 # --- [ CONFIGURATION & DEFAULTS ] --------------------------------------------
 
 # 1. AppID Configuration (0 = Auto-detect)
-APP_ID="0" 
+APP_ID="0"
 
 # 2. Behavior Flags (0=Off, 1=On)
 AUTO_INSTALL_FLATPAK=1      # Attempt to install Flatpak/Flathub if missing
