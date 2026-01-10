@@ -342,7 +342,6 @@ rm -rf [DATA]/.ld.so
 
 
 ´´´
-
 # PORTABLE FLATPAK LAUNCHER 
 
 # --- [ CONFIGURATION & DEFAULTS ] --------------------------------------------
@@ -373,9 +372,9 @@ rm -rf [DATA]/.ld.so
 ´´´
 # overrides storage area: 
 # =============================================================================
-´´´
 
-´´´ 
+
+
 # =============================================================================
 
 LANGAGE_INFERRING_[BIN]=(bin,binary,binaries,binarios,Bin,Binary,Binaries,Binarios,BIN,BINARY,BINARIES,BINARIOS)
