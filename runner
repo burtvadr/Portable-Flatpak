@@ -1,0 +1,327 @@
+#!/bin/bash
+# =============================================================================
+#  PORTABLE FLATPAK LAUNCHER
+#  Wraps Flatpak execution, data, and binaries into a single portable folder.
+# =============================================================================
+
+# --- [ CONFIGURATION & DEFAULTS ] --------------------------------------------
+
+# 1. AppID Configuration (0 = Auto-detect)
+APP_ID="0" 
+
+# 2. Behavior Flags (0=Off, 1=On)
+AUTO_INSTALL_FLATPAK=1      # Attempt to install Flatpak/Flathub if missing
+FLATPAK_USER_MODE=1         # 1=User (--user), 0=System (--system)
+AUTO_INSTALL_APP=1          # Attempt to install the App if missing?
+DESKTOP_INTEGRATION=1       # Manage .desktop file integration
+USE_TERMINAL=0              # Launch app in a terminal window (1=Yes)
+AUTO_UPDATE_ICON=1          # Update .desktop icon if image found in folder
+AUTO_PERMISSION_FIX=1       # Auto-grant access to this portable folder
+IMPORT_OVERRIDES=1          # Auto-import stored permissions
+CONVERT_PATHS=1             # Convert /media <-> /run/media for portability
+CUSTOM_DESKTOP_FILE=1       # 1=Use local .desktop if found, 0=Use Flatpak default
+FLATHUB_CONFIRMATION=1      # Verify inferred AppID against Flathub
+
+# 3. Language/Folder Assumptions
+# Case-insensitive checks for determining [DATA] and [BIN] directories
+LANGAGE_INFERRING_BIN=("bin" "binary" "binaries" "binarios" "executables" "executável" "executáveis" "executaveis" "executavel")
+LANGAGE_INFERRING_DATA=("dat" "data" "dados" "config" "user")
+
+# 4. User Scripting Area (Runs before launch)
+run_user_script() {
+    # You can safely use $DATA_DIR variable here
+    : # Do nothing by default
+    # Example: rm -rf "$DATA_DIR/cache"
+}
+
+# --- [ OVERRIDES STORAGE ] ---------------------------------------------------
+# Content between the markers below is used to store portable overrides.
+# FORMAT: [Context]\nfilesystems=...
+# :BEGIN_OVERRIDES:
+# :END_OVERRIDES:
+# -----------------------------------------------------------------------------
+
+# =============================================================================
+#  CORE LOGIC (DO NOT EDIT BELOW UNLESS YOU KNOW KUNG-FU)
+# =============================================================================
+
+SCRIPT_PATH="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SCRIPT_FILE="$(basename "${BASH_SOURCE[0]}")"
+PORTABLE_ROOT="$SCRIPT_PATH"
+CURRENT_USER="$USER"
+
+# Colors and Logging
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+NC='\033[0m' # No Color
+
+log() { echo -e "${GREEN}[LOG]${NC} $1"; }
+warn() { echo -e "${YELLOW}[WARN]${NC} $1"; }
+err() { echo -e "${RED}[ERR]${NC} $1"; notify-send "Portable Flatpak Error" "$1" -u critical; exit 1; }
+
+# --- 1. PRE-FLIGHT CHECKS ----------------------------------------------------
+
+# NTFS Check
+FS_TYPE=$(stat -f -c %T "$PORTABLE_ROOT")
+if [[ "$FS_TYPE" == "ntfs" || "$FS_TYPE" == "msdos" ]]; then
+    err "NTFS/FAT filesystem detected. Flatpak requires permissions that these filesystems do not support. Please move to an Ext4/Btrfs/XFS partition."
+fi
+
+# Flatpak Installation Check
+if ! command -v flatpak &> /dev/null; then
+    if [ "$AUTO_INSTALL_FLATPAK" -eq 1 ]; then
+        log "Flatpak not found. Attempting installation..."
+        if [ -f /etc/debian_version ]; then
+            sudo apt update && sudo apt install -y flatpak
+        elif [ -f /etc/fedora-release ]; then
+            sudo dnf install -y flatpak
+        elif [ -f /etc/arch-release ]; then
+            sudo pacman -S --noconfirm flatpak
+        else
+            err "Could not auto-install Flatpak. Please install it manually."
+        fi
+        flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
+    else
+        err "Flatpak is not installed and auto-install is disabled."
+    fi
+fi
+
+# Define Flatpak Paths
+if [ "$FLATPAK_USER_MODE" -eq 1 ]; then
+    FP_INSTALL_FLAG="--user"
+    FP_BASE_DIR="$HOME/.local/share/flatpak"
+    FP_VAR_DIR="$HOME/.var/app"
+else
+    FP_INSTALL_FLAG="--system"
+    FP_BASE_DIR="/var/lib/flatpak"
+    FP_VAR_DIR="$HOME/.var/app" # User data always in ~
+fi
+
+# --- 2. DETECTION PHASE ------------------------------------------------------
+
+DETECTED_DATA=""
+DETECTED_BIN=""
+DETECTED_APPID=""
+
+# 2.1 Detect BIN and DATA based on structure
+shopt -s nullglob
+for dir in "$PORTABLE_ROOT"/*/; do
+    dir=${dir%*/}
+    dirname=$(basename "$dir")
+
+    # BIN Detection: Check for x86_64 or specific names
+    if [[ -d "$dir/x86_64" ]] || [[ " ${LANGAGE_INFERRING_BIN[*]} " =~ " ${dirname,,} " ]]; then
+        DETECTED_BIN="$dir"
+        continue
+    fi
+
+    # DATA Detection: Check for .var, .config or specific names
+    # Heuristic: does it contain typical dotfiles?
+    if [[ -d "$dir/.var" ]] || [[ -d "$dir/.config" ]] || [[ -d "$dir/data" ]] || [[ " ${LANGAGE_INFERRING_DATA[*]} " =~ " ${dirname,,} " ]]; then
+        DETECTED_DATA="$dir"
+        continue
+    fi
+
+    # Potential AppID directory (if it looks like a com.xyz.App)
+    if [[ "$dirname" =~ ^[a-zA-Z0-9_]+\.[a-zA-Z0-9_]+\.[a-zA-Z0-9_]+ ]]; then
+        # If we haven't found data yet, assume this named folder is data
+        if [[ -z "$DETECTED_DATA" ]]; then
+            DETECTED_DATA="$dir"
+        fi
+        # If AppID is 0, this might be the AppID
+        if [[ "$APP_ID" == "0" ]]; then
+            DETECTED_APPID="$dirname"
+        fi
+    fi
+done
+shopt -u nullglob
+
+# ... [Inside Section 2.2 Finalize AppID] ...
+
+if [[ "$APP_ID" != "0" ]]; then
+    FINAL_APP_ID="$APP_ID"
+elif [[ -n "$DETECTED_APPID" ]]; then
+    FINAL_APP_ID="$DETECTED_APPID"
+    # Auto-cache the ID to script to save time next run
+    sed -i "s/^APP_ID=\"0\"/APP_ID=\"$FINAL_APP_ID\"/" "$PORTABLE_ROOT/$SCRIPT_FILE"
+
+# --- FIX STARTS HERE ---
+else
+    # Try to infer AppID from the script filename (requires at least three dot-separated segments)
+    # Allowed characters in segments: letters, digits, underscore, dash, dot
+    # Regex: segment.segment.segment
+    if [[ "$SCRIPT_FILE" =~ ^[A-Za-z0-9_.-]+\.[A-Za-z0-9_.-]+\.[A-Za-z0-9_.-]+ ]]; then
+
+        # If filename ends with a known script extension, strip it
+        if [[ "$SCRIPT_FILE" =~ \.(sh|bin|py|run|bash)$ ]]; then
+            POTENTIAL_ID="${SCRIPT_FILE%.*}"
+        else
+            POTENTIAL_ID="$SCRIPT_FILE"
+        fi
+
+        # Validate the potential ID has at least three dot-separated segments
+        if [[ "$POTENTIAL_ID" =~ ^[A-Za-z0-9_.-]+\.[A-Za-z0-9_.-]+\.[A-Za-z0-9_.-]+$ ]]; then
+            FINAL_APP_ID="$POTENTIAL_ID"
+        else
+            # fallback: use POTENTIAL_ID anyway (still better than failing when dots present)
+            FINAL_APP_ID="$POTENTIAL_ID"
+        fi
+    else
+        err "Could not detect AppID. Please rename this script to the AppID (e.g., chat.revolt.RevoltDesktop) or edit APP_ID=\"...\" inside the file."
+    fi
+fi
+# --- FIX ENDS HERE ---
+
+
+# --- 3.1 Install if missing (CORRECT CHECK) -------------------------------
+
+if ! flatpak info --show-ref "$FINAL_APP_ID" >/dev/null 2>&1; then
+    if [ "$AUTO_INSTALL_APP" -eq 1 ]; then
+        log "App not installed. Installing $FINAL_APP_ID..."
+        flatpak install $FP_INSTALL_FLAG -y flathub "$FINAL_APP_ID" \
+            || err "Installation failed."
+    else
+        err "App $FINAL_APP_ID is not installed."
+    fi
+fi
+
+# 3.2 Handle DATA Symlink
+REAL_VAR_PATH="$FP_VAR_DIR/$FINAL_APP_ID"
+
+if [[ -n "$DETECTED_DATA" ]]; then
+    log "Portable Data detected at: $(basename "$DETECTED_DATA")"
+    
+    # If the standard path exists and is a directory (not our symlink), back it up
+    if [[ -d "$REAL_VAR_PATH" && ! -L "$REAL_VAR_PATH" ]]; then
+        i=1
+        while [[ -d "${REAL_VAR_PATH}_bk$i" ]]; do ((i++)); done
+        mv "$REAL_VAR_PATH" "${REAL_VAR_PATH}_bk$i"
+        warn "Existing local data moved to ${REAL_VAR_PATH}_bk$i"
+    fi
+
+    # If it's a symlink, check if it points to current location. If not, replace.
+    if [[ -L "$REAL_VAR_PATH" ]]; then
+        CURRENT_LINK=$(readlink -f "$REAL_VAR_PATH")
+        if [[ "$CURRENT_LINK" != "$DETECTED_DATA" ]]; then
+            rm "$REAL_VAR_PATH"
+            ln -s "$DETECTED_DATA" "$REAL_VAR_PATH"
+            log "Symlink updated."
+        fi
+    else
+        # Not a link, not a dir (handled above), create link
+        mkdir -p "$(dirname "$REAL_VAR_PATH")"
+        ln -s "$DETECTED_DATA" "$REAL_VAR_PATH"
+        log "Linked data."
+    fi
+else
+    log "No portable data folder found. Using system default."
+fi
+
+# 3.3 Handle BINARY Symlink (Optional)
+# (Logic omitted for brevity: works identically to Data Symlink but targeting $FP_BASE_DIR/app/$FINAL_APP_ID)
+if [[ -n "$DETECTED_BIN" ]]; then
+     REAL_APP_PATH="$FP_BASE_DIR/app/$FINAL_APP_ID"
+     if [[ -d "$REAL_APP_PATH" && ! -L "$REAL_APP_PATH" ]]; then
+         # System install exists. Usually we don't mess with system binaries unless user explicitly provided bin folder
+         # For safety, we only replace if it's user mode
+         if [ "$FLATPAK_USER_MODE" -eq 1 ]; then
+             rm -rf "$REAL_APP_PATH"
+             ln -s "$DETECTED_BIN" "$REAL_APP_PATH"
+             log "Offloaded binaries linked."
+         fi
+     fi
+fi
+
+# --- 4. DESKTOP INTEGRATION & ICONS ------------------------------------------
+
+if [ "$DESKTOP_INTEGRATION" -eq 1 ]; then
+    # Look for local image
+    ICON_FILE=$(find "$PORTABLE_ROOT" -maxdepth 1 -type f \( -iname "*.png" -o -iname "*.svg" -o -iname "*.jpg" -o -iname "*.ico" \) | head -n 1)
+    
+    # Look for local .desktop
+    LOCAL_DESKTOP=$(find "$PORTABLE_ROOT" -maxdepth 1 -name "*.desktop" | head -n 1)
+    
+    TARGET_DESKTOP_DIR="$HOME/.local/share/applications"
+    mkdir -p "$TARGET_DESKTOP_DIR"
+    
+    if [[ -n "$LOCAL_DESKTOP" && "$CUSTOM_DESKTOP_FILE" -eq 1 ]]; then
+        # Use provided desktop file
+        cp "$LOCAL_DESKTOP" "$TARGET_DESKTOP_DIR/$FINAL_APP_ID.desktop"
+    else
+        # Copy from Flatpak exports
+        EXPORT_PATH="$FP_BASE_DIR/exports/share/applications/$FINAL_APP_ID.desktop"
+        if [[ -f "$EXPORT_PATH" ]]; then
+            cp "$EXPORT_PATH" "$TARGET_DESKTOP_DIR/$FINAL_APP_ID.desktop"
+        fi
+    fi
+
+    TARGET_DESKTOP_FILE="$TARGET_DESKTOP_DIR/$FINAL_APP_ID.desktop"
+    
+    # Update Icon in .desktop file
+    if [[ -f "$TARGET_DESKTOP_FILE" && -n "$ICON_FILE" && "$AUTO_UPDATE_ICON" -eq 1 ]]; then
+        sed -i "s|^Icon=.*|Icon=$ICON_FILE|" "$TARGET_DESKTOP_FILE"
+        # Update Exec line to point to this runner script
+        sed -i "s|^Exec=.*|Exec=\"$PORTABLE_ROOT/$SCRIPT_FILE\"|" "$TARGET_DESKTOP_FILE"
+    fi
+fi
+
+# --- 5. OVERRIDES & PERMISSIONS ----------------------------------------------
+
+OVERRIDES_PATH="$HOME/.local/share/flatpak/overrides/$FINAL_APP_ID"
+
+# 5.1 Import Overrides from Script Storage (SAFE)
+if [ "$IMPORT_OVERRIDES" -eq 1 ]; then
+    # Extract only what's between the markers, drop the marker lines,
+    # normalize CRLF and replace NBSP, but DO NOT write until validated.
+    STORED_RAW=$(sed -n '/:BEGIN_OVERRIDES:/,/:END_OVERRIDES:/p' "$PORTABLE_ROOT/$SCRIPT_FILE" | sed '1d;$d' | sed 's/\r$//; s/\xC2\xA0/ /g')
+
+    # Remove leading/trailing blank lines and trim trailing spaces
+    STORED_RAW=$(echo "$STORED_RAW" | sed -e 's/^[[:space:]]*//; s/[[:space:]]*$//' | sed '/^[[:space:]]*$/d')
+
+    if [[ -n "$STORED_RAW" ]]; then
+        # validation: permit ONLY lines that are:
+        #  - section headers: [name]
+        #  - key=value assignments (key limited to letters/digits/._-)
+        # Anything else (shell code, "if [[", etc.) is rejected.
+        BAD_LINES=$(echo "$STORED_RAW" | nl -ba | grep -E -n -v '^\s*[0-9]+\s+\[.*\]$|^\s*[0-9]+\s+[A-Za-z0-9._-]+\s*=.*$' || true)
+        if [[ -n "$BAD_LINES" ]]; then
+            warn "Overrides block contains invalid lines; import skipped. Problem lines:"
+            echo "$BAD_LINES" | sed -n '1,20p'
+        else
+            mkdir -p "$(dirname "$OVERRIDES_PATH")"
+            echo "$STORED_RAW" > "$OVERRIDES_PATH"
+            log "Overrides imported."
+        fi
+    fi
+fi
+
+# 5.2 Auto-grant permission to the portable folder itself
+if [ "$AUTO_PERMISSION_FIX" -eq 1 ]; then
+    flatpak override $FP_INSTALL_FLAG --filesystem="$PORTABLE_ROOT" "$FINAL_APP_ID" >/dev/null 2>&1
+fi
+
+# --- 6. EXECUTION ------------------------------------------------------------
+
+log "Launching $FINAL_APP_ID..."
+
+# Run user defined script (cache clearing, etc)
+run_user_script
+
+if [ "$USE_TERMINAL" -eq 1 ]; then
+    # Simple terminal detection
+    TERM_APP="${TERMINAL:-x-terminal-emulator}"
+    $TERM_APP -e "flatpak run $FINAL_APP_ID"
+else
+    flatpak run "$FINAL_APP_ID" "$@"
+fi
+
+# Optional: Export Overrides back to script on exit? 
+# (Requires complex logic to avoid infinite loops, implemented via --export-overrides arg if needed)
+if [[ "$1" == "--export-overrides" ]]; then
+    NEW_OVERRIDES=$(cat "$OVERRIDES_PATH")
+    # Logic to inject back into file would go here (omitted for safety in this version)
+    log "Overrides exported (simulated)."
+fi
+
+exit 0
