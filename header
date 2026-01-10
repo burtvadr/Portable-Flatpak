@@ -1,0 +1,37 @@
+# PORTABLE FLATPAK LAUNCHER 
+
+# --- [ CONFIGURATION & DEFAULTS ] --------------------------------------------
+
+# 1. AppID Configuration
+MANUAL_APP_ID="0" 
+
+# 2. Behavior Flags (0=Off, 1=On)
+AUTO_INSTALL_FLATPAK=1      # Attempt to install Flatpak/Flathub if missing
+FLATPAK_USER_MODE=1         # install flatpak in user mode
+AUTO_INSTALL_APP=1          # Attempt to install the App if missing?
+DESKTOP_INTEGRATION=1       # adds desktop entries on Desktop enviroment
+USE_TERMINAL=0              # Launch app in a terminal window
+AUTO_UPDATE_ICON=1          # Update .desktop icon if image found in folder
+AUTO_PERMISSION_FIX=1       # Auto-grant access to this portable folder
+IMPORT_OVERRIDES=1          # Auto-import stored permissions (overrides)
+CONVERT_PATHS=1             # Convert /media <-> /run/media for portability
+CUSTOM_DESKTOP_FILE=1       # auto detects desktop file and symlink it to 
+LANGAGE_INFERRING=          # directories like data/dados/dat/ bin/binaries/binarios/binary will be check if they are the AppID
+FLATHUB_CONFIRMATION=       # directories that are expected to be the app id will have the ID searched on flathub for the confirmation if they are a valid app id, if off, a simpler check for classic flatpak ip pattern will be used
+
+# 2. Scripting area: 
+´´´
+rm -rf [data]/cache
+rm -rf [data]/.cache
+rm -rf [data]/.ld.so
+
+´´´
+# overrides storage area: 
+# =============================================================================
+´´´
+
+´´´ 
+# =============================================================================
+
+LANGAGE_INFERRING_[BIN]=(bin,binary,binaries,binarios,Bin,Binary,Binaries,Binarios,BIN,BINARY,BINARIES,BINARIOS)
+LANGAGE_INFERRING_[DATA]=(dat,data,dados,Dat,Data,Dados,DAT,DATA,DADOS)
