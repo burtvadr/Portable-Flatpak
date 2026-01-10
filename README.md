@@ -226,7 +226,9 @@ and of course, for icons, if a desktop file is already included on the [Portable
 2. **the system computes its current absolute path (for [Portable Root] example `/media/user/USB/Games/Osu`:** 
 
 3. **the system checks the aplication [AppID]:**
-   * mark as a valid [AppID] if it contains at least 3 dot-separated segments, regardless of what the segments contain. # "except .ld.so "
+   * if the [BIN] was successfully check if $BIN/current/active/export/bin/[AppID] exist, this location always has a file with the [AppID] 
+   * but if it dont exist. there are others ways to check for a [AppID] bellow.
+   * valid [AppID]'s is a constant and unique identifier of the application consisting of the reverse-DNS format {tld}.{vendor}.{product}.
 ```
 ├────────── [Portable Root]
 │   ├── двоичный
