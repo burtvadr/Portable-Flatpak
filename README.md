@@ -74,7 +74,7 @@ if you want to go even more minimal
 ├── Discord                         # AppID=com.discordapp.Discord one-click run application (Entry Point) # RENAMABLE
 ├── Steam                           # AppID=com.valvesoftware.Steam one-click run application (Entry Point) # RENAMABLE
 ```
-this effectively work as a program that just installs flatpak, adds flathub, installs the aplication by its [AppID] and run your program with one click
+this effectively work as a program that just installs flatpak, adds flathub, installs the application by its [AppID] and run your program with one click
 
 ### 3.3 limitations
 
@@ -100,8 +100,8 @@ this effectively work as a program that just installs flatpak, adds flathub, ins
 burtjo@Linux:/media/burtjo/SSDpkg/packages/Discord$ 
 
 ```
-* this setup could also be a theorically predictable pattern, but at least for me the complexety increases exponentially.
-* so i wont include surgically indivually detecting each directory on my implementation
+* this setup could also be a theoretically predictable pattern, but at least for me the complexity increases exponentially.
+* so i wont include surgically individually detecting each directory on my implementation
 
 
 ```
@@ -192,7 +192,7 @@ even this crazy setup, the system should be able to detect `eerm=[DATA]` and `pr
 
 ## 4. My Stretch: Desktop Integration
 
-* naturally, installing flatpaks adds a desktop entry on your Desktop enviroment, we want to preserve this behavior by default. #you should be able to disable desktop integration. so you can only run the application by clicking the `runner`
+* naturally, installing flatpaks adds a desktop entry on your Desktop environment, we want to preserve this behavior by default. #you should be able to disable desktop integration. so you can only run the application by clicking the `runner`
 
 *automatically applies a custom icon, by detecting by the presence of any images inside the `[Portable Root]` so you don’t have to edit anything manually
 
@@ -213,7 +213,7 @@ or for a --user install at
  `~/.local/share/flatpak/exports/share/applications/[AppID]`
 
 
- * users should also want to keep custom .desktop file and like everthing here we should automatically by its presense, if the user dont want a desktop, just dont have it on [Portable Root]
+ * users should also want to keep custom .desktop file and like everything here we should automatically by its presence, if the user don't want a desktop, just don't have it on [Portable Root]
 ```
 ├────────── [Portable Root]
 ├── runner                         
@@ -237,7 +237,7 @@ and of course, for icons, if a desktop file is already included on the [Portable
   or system wide at
  `/var/lib/flatpak/app/[AppID]`
 
-* Using Symlinks to achive Portable aplications, Specifically Flatpaks by redirecting that location to the portable folder — without patching Flatpak.
+* Using Symlinks to achieve Portable applications, Specifically Flatpaks by redirecting that location to the portable folder — without patching Flatpak.
 
 ### 6 Practical execution logic
 
@@ -400,7 +400,7 @@ burtjo@Linux:/SSDpkg/packages/[AppID]$ tree -a -L 3
    
    * defines user [OVERRIDES] (on by default) change overrides at `~/.local/share/flatpak/overrides/[AppID],` to cached inside the `runner` (no extra files), so its portable,
 
-* **Automating permitions** (optional, on by default) will be added before launching the application the permission override at for `~/.local/share/flatpak/overrides/[AppID] `
+* **Automating permissions** (optional, on by default) will be added before launching the application the permission override at for `~/.local/share/flatpak/overrides/[AppID] `
 * **Importing and exporting Permissions** 
 the system should be able to at launch import or export the flatpaks override at ~/.local/share/flatpak/overrides/[AppID] via a launch command ./runner --export-overrides 
 or --import-overrides, with a twist, it will change users names by $USER to accommodate new users name, in case you have a different user name on your new system. you can disable this behavior.
