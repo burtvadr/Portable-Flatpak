@@ -82,10 +82,10 @@ this effectively work as a script that just installs flatpak, adds flathub, inst
 * The user should never rename or move the folder while the app is running.
 
 ** soft Constraints:**
-* [DATA] folders cannot be searched more than two directories deep (e.g., `[Portable Path]/[things]/[stuff]/[AppID]` is invalid by default).
-* naturally avoid ntfs by checking location, sending a notify-send
+* [DATA] folders cannot be searched more than two directories deep (e.g., `[Portable Path]/[things]/[stuff]/[AppID]` will not be searched by default).
+* naturally avoid ntfs or others unsupported file systems, sending a notify-send
 ```
-Script Error" "NTFS unsupported, Move into a ext4 drive!" -u critical 
+Script Error" "File system unsupported, Move into a linux File system drive!" -u critical 
 ```
 (optional, but no ntfs by default) 
 
