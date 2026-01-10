@@ -106,7 +106,7 @@ burtjo@Linux:/media/burtjo/SSDpkg/packages/Discord$
 
 ```
 * this setup could also be a theoretically predictable pattern, but at least for me the complexity increases exponentially.
-* so i wont include surgically individually detecting each directory on my implementation
+* so i wont include surgically individually detecting each sub-directory on my implementation
 
 
 
