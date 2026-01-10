@@ -83,7 +83,11 @@ this effectively work as a script that just installs flatpak, adds flathub, inst
 
 ** soft Constraints:**
 * [DATA] folders cannot be searched more than two directories deep (e.g., `[Portable Path]/[things]/[stuff]/[AppID]` is invalid by default).
-* naturally avoid ntfs by checking location, sending a notify-send "Script Error" "NTFS unsupported, Move into a ext4 drive!" -u critical # (optional, no ntfs by default) 
+* naturally avoid ntfs by checking location, sending a notify-send
+```
+Script Error" "NTFS unsupported, Move into a ext4 drive!" -u critical 
+```
+(optional, but no ntfs by default) 
 
 
 
