@@ -41,7 +41,7 @@ Use a flexible logic that acts as middleware between the user and Package, on th
 
 ### 3.1 Core Philosophy
 
-* **Adaptable:** Users should be able to rename and move most directories freely. The script should detect the folder's current absolute path and still work when the folder moves directories or names.
+* **Adaptable:** Users should be able to rename and move most directories freely. The system should detect the folder's current absolute path and still work when the folder moves directories or names.
 * **No metadata files:** configuration internally to avoid extra files and clutter.
 * **Expressive layout:** Users should be free to organize the portable directory to their taste; a sensible default structure should exist.
 
@@ -74,7 +74,7 @@ if you want to go even more minimal
 ├── Discord                         # AppID=com.discordapp.Discord one-click run application (Entry Point) # RENAMABLE
 ├── Steam                           # AppID=com.valvesoftware.Steam one-click run application (Entry Point) # RENAMABLE
 ```
-this effectively work as a script that just installs flatpak, adds flathub, installs the aplication by its [AppID] and run your program with one click
+this effectively work as a program that just installs flatpak, adds flathub, installs the aplication by its [AppID] and run your program with one click
 
 ### 3.3 limitations
 
@@ -85,7 +85,7 @@ this effectively work as a script that just installs flatpak, adds flathub, inst
 * [DATA] folders cannot be searched more than two directories deep (e.g., `[Portable Path]/[things]/[stuff]/[AppID]` will not be searched by default).
 * naturally avoid ntfs or others unsupported file systems, sending a notify-send
 ```
-Script Error" "File system unsupported, Move into a linux File system drive!" -u critical 
+Error" "File system unsupported, Move into a linux File system drive!" -u critical 
 ```
 (optional, but no ntfs by default) 
 
@@ -382,7 +382,7 @@ burtjo@Linux:/SSDpkg/packages/[AppID]$ tree -a -L 3
 
 * **Automating permitions** (optional, on by default) will be added before launching the application the permission override at for `~/.local/share/flatpak/overrides/[AppID] `
 * **Importing and exporting Permissions** 
-the script should be able to at launch import or export the flatpaks override at ~/.local/share/flatpak/overrides/[AppID] via a launch command ./runner --export-overrides 
+the system should be able to at launch import or export the flatpaks override at ~/.local/share/flatpak/overrides/[AppID] via a launch command ./runner --export-overrides 
 or --import-overrides, with a twist, it will change users names by $USER to accommodate new users name, in case you have a different user name on your new system. you can disable this behavior.
 
 ```
@@ -408,9 +408,9 @@ filesystems=/run/media/jason/SSD/SteamLIB;/run/media/jason/SSDpkg/Gaming/Steam
 burtjo@Linux:~/.local/share/flatpak/overrides$ 
 ```
 
-   * ./runner --export-overrides # get the overrides from inside of your run script to your `~/.local/share/flatpak/overrides/[AppID]`
-   * ./runner --import-overrides # saves the overrides at `~/.local/share/flatpak/overrides/[AppID]` on a section inside the shell script, the a "cache" the caches lives inside shell script, so no extra files or directories
-   * those 2 only work after AppID= was marked with the app by the user or automatically by the script,
+   * ./runner --export-overrides # get the overrides from inside of your runner to your `~/.local/share/flatpak/overrides/[AppID]`
+   * ./runner --import-overrides # saves the overrides at `~/.local/share/flatpak/overrides/[AppID]` on a section inside the runner, the a "cache" the caches lives inside runner, so no extra files or directories
+   * those 2 only work after AppID= was marked with the app by the user or automatically by the runner,
    * by default, always automatically import overrides if the `~/.local/share/flatpak/overrides/[AppID]` dont yet exist or is empty.
    * check if the application is already installed,
  
@@ -464,7 +464,7 @@ rm -rf [DATA]/.cache
 rm -rf [DATA]/.ld.so
 ´´´
 
-   * The script runs `flatpak run [AppID]`.
+   * The runner runs `flatpak run [AppID]`.
    * Option: provide a toggle to run with a terminal (off by default).
 
 
@@ -474,12 +474,12 @@ rm -rf [DATA]/.ld.so
 ## 5. Practical Considerations & Edge Cases
 
 * **Permissions:** Offloading system-installed Flatpaks often requires elevated privileges to manipulate `/var/lib/flatpak`. User-level Flatpaks in `~/.local/share/flatpak` are easier to manage without `sudo`.
-* **Broken Symlinks:** The script must safely detect and remove stale symlinks to avoid corrupting a user's real data.
-* **Depth & Naming Constraints:** To keep discovery simple and reliable, the script restricts search depth for AppIDs and requires certain naming patterns when placed inside subfolders.
+* **Broken Symlinks:** The runner must safely detect and remove stale symlinks to avoid corrupting a user's real data.
+* **Depth & Naming Constraints:** To keep discovery simple and reliable, the runner restricts search depth for AppIDs and requires certain naming patterns when placed inside subfolders.
 * **Application-Specific Behavior:** Some apps store state in unexpected places (e.g., system caches, hardware-specific directories). The approach documents known exceptions and suggests workarounds.
 * **Compatibility:** Not all Flatpaks or applications will behave identically across desktop environments; some manual adjustments may be necessary.
 * **Security & Sandboxing:** Redirecting data via symlinks respects Flatpak's sandboxing model at the filesystem level, but any approach that changes data paths should be reviewed for sandbox and permission implications.
-* **Safe defaults & explicit user action:** Because the mechanism touches user data paths, the script defaults to `AppID=0` (no action) and an `IGNORE_LIST` to prevent accidental modifications. The user must explicitly set a real `AppID` to enable behavior.
+* **Safe defaults & explicit user action:** Because the mechanism touches user data paths, the runner defaults to `AppID=0` (no action) and an `IGNORE_LIST` to prevent accidental modifications. The user must explicitly set a real `AppID` to enable behavior.
 * **Optional executable wrapper:** An optional executable binary wrapper can be provided to bypass execution flags for file managers that don't allow running shell scripts directly — mark this as RENAMABLE if desired.
 > Note on offline installation can work with this method but it is kinda broken
 * **Flatpak improvement:** While the symlink method can work great. It's not guaranteed that it will always work.
