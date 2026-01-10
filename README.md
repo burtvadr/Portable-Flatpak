@@ -83,7 +83,27 @@ this effectively work as a program that just installs flatpak, adds flathub, ins
 
 **soft Constraints:**
 * [DATA] folders cannot be searched more than two directories deep (e.g., `[Portable Path]/[things]/[stuff]/[AppID]` will not be searched by default).
-* naturally avoid ntfs or others unsupported file systems, sending 
+* naturally avoid ntfs or others unsupported file systems, sending
+
+```
+├────────── [Portable Root]
+├── cache
+├── config
+├── current -> x86_64/stable
+├── data
+├── .ld.so
+├── .local
+├── runner
+└── x86_64
+
+8 directories, 1 file
+burtjo@Linux:/media/burtjo/SSDpkg/packages/Discord$ 
+
+```
+* this setup could also be a theorically predictable pattern, but at least for me the complexety increases exponentially.
+* so i wont include surgically indivually detecting each directory on my implementation
+
+
 ```
 notify-send "Error" "File system unsupported, Move into a linux File system drive\!" -u critical 
 ```
