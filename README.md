@@ -128,7 +128,7 @@ burtjo@Linux:/media/burtjo/SSDpkg/packages/Discord$
 ### 3.4 Declaring where is [DATA] and [BIN]  
 ```
 ├────────── [Portable Root]
-├── перевод
+├── перевод       #[DATA]
 │   ├──  cache
 │   ├── .cache
 │   ├── .config
@@ -142,20 +142,20 @@ burtjo@Linux:/media/burtjo/SSDpkg/packages/Discord$
 └── runner                          # one-click run application (Entry Point) # renameable
 8 directories, 1 file
 ```
-all flatpaks [DATA] directories, at some level, have some of these files, so we can enfer [DATA] location by checking if there is more than 3 of this list of folders and hidden folders
+all flatpaks [DATA] directories, at some level, have some of these files, so we can infer [DATA] location by checking if there is more than 3 of this list of folders and hidden folders
 (`cache`, `.cache`, `.config`, `config`, `data`, `.ld.so`, `.local`, `.nv`, `.pki`, `.var`)
 
 ```
 burtjo@Linux:/SSDpkg/packages/Program$ tree -a -L 2
 .
-├── двоичный
+├── двоичный       #[BIN]
 │   ├── current -> x86_64/stable
 │   └── x86_64
 └── runner                          # one-click run application (Entry Point) # renameable
 └── перевод
 ```
 all flatpaks [BIN] directories have a (`x86_64`) folder and a and a symbolic link (`current`) -> (`x86_64/stable`)
-so its easy a easy check for those two.
+so its easy to check for those two.
 
 if [DATA] and [BIN] coulnt be determined using the method above we proceds with:**
 
@@ -439,7 +439,7 @@ burtjo@Linux:~/.local/share/flatpak/overrides$
    * if it already is installed, compare how its installed with how its the `[Portable Path]` configuration. determined by the layout previously.
    * If `~/.var/app/[AppID]` is a broken symlink (from a previous location), remove it.
    * if `~/.var/app/[AppID]` its not a symlink and the user language assumption-
-   * check if LANGAGE_INFERRING_[DATA] directories are empty
+   * check if the detected [DATA] from LANGAGE_INFERRING_[DATA] directories are empty
    * if they are, move the data from `~/.var/app/[AppID]/` to the LANGAGE_INFERRING_[DATA] directory,
    * be aware of `data/[AppID]` `dados/[AppID]` `dat/[AppID]` setups as well, 
    * and If `~/.var/app/[AppID]` is a standard directory, rename it by appending a rotation suffix (e.g., `com.vendor.org` → `com.vendor.org1`) so the original is backed up. If `com.vendor.org1` already exists, rotate to `com.vendor.org2`, and so on
