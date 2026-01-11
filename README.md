@@ -122,7 +122,7 @@ notify-send "Error" "File system unsupported, Move into a linux File system driv
 * **Trigger:** absence of `"$DATA"` And absence of `"$BIN"` 
 * **results:** effectively just installs the application and executes it
 
-### 3.4 Declaring `"$DATA"` and ``"$BIN"` though its contents
+### 3.4 Declaring `"$DATA"` and `"$BIN"` though its contents
 ```
 ├────────── $PORTABLE_ROOT
 ├── перевод       # `"$DATA"`
