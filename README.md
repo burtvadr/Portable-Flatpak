@@ -53,7 +53,7 @@ This is a tooling-first approach intended to work now rather than a formal stand
 You should be able to have a flexible structure that preserves your needs, with the freedom to name everything whatever you want
 
 ```
-[Portable Root]/                    # renameable
+$PORTABLE_ROOT/                    # renameable
 ├── runner                          # one-click run application (Entry Point) # renameable
 ├── stuff                           # (Optional) anything the user would want to keep; should never break anything # renameable
 ├── binaries                        # (Optional) Offloaded Flatpak binaries for ~/.local/share/flatpak/app/$APPID # renameable
@@ -63,14 +63,14 @@ You should be able to have a flexible structure that preserves your needs, with 
 or, in a minimal layout:
 
 ```
-[Portable Root]/                    # RENAMABLE
+$PORTABLE_ROOT/                    # RENAMABLE
 ├── runner                          # one-click run application (Entry Point) # RENAMABLE
 ├── stuff                           # (Optional) anything the user would want to keep; should never break anything # RENAMABLE
 └── $APPID/                        # (On by default) Persistent User Data # RENAMABLE
 ```
 if you want to go even more minimal
 ```
-[Portables Root]/                    # RENAMABLE
+$PORTABLE_ROOT/                    # RENAMABLE
 ├── Brave                           # AppID=com.brave.Browser one-click run application (Entry Point) # RENAMABLE
 ├── Discord                         # AppID=com.discordapp.Discord one-click run application (Entry Point) # RENAMABLE
 ├── Steam                           # AppID=com.valvesoftware.Steam one-click run application (Entry Point) # RENAMABLE
@@ -83,7 +83,7 @@ this effectively work as a program that just installs flatpak, adds flathub, ins
 * The user should never rename or move the folder while the app is running.
 
 **soft Constraints:**
-* "$DATA"  folders cannot be searched more than two directories deep (e.g., `[Portable Path]/[things]/[stuff]/$APPID` will not be searched by default).
+* `"$DATA"` folders cannot be searched more than two directories deep. (e.g., `$PORTABLE_ROOT/things/stuff/$DATA`) will not be searched will not be found
 * naturally avoid ntfs or others unsupported file systems, sending
 ```
 notify-send "Error" "File system unsupported, Move into a linux File system drive\!" -u critical
@@ -92,7 +92,7 @@ notify-send "Error" "File system unsupported, Move into a linux File system driv
 
 
 ```
-├────────── [Portable Root]
+├────────── $PORTABLE_ROOT
 ├── cache
 ├── config
 ├── current -> x86_64/stable
@@ -101,34 +101,31 @@ notify-send "Error" "File system unsupported, Move into a linux File system driv
 ├── .local
 ├── runner
 └── x86_64
-
 8 directories, 1 file
-burtjo@Linux:/media/burtjo/SSDpkg/packages/Discord$
-
 ```
 * this setup could also be a theoretically predictable pattern, but at least for me the complexity increases exponentially.
 * so i wont include surgically individually detecting each sub-directory on my implementation
-
-
-
+ 
+ 
+ 
 ### 3.3 Detection Mechanism
 
 **user A — Data Persistence**
-* **Trigger:** Presence of "$DATA"  and absence of "$BIN" 
+* **Trigger:** Presence of `"$DATA"` and absence of `"$BIN"` 
 * **results:** Keep only user saves/configuration portable; binaries remain on the host. Binaries are retrievable from Flathub.
 
 **user A.2 — Binary Offloading**
-* **Trigger:** Presence of "$DATA"  And presence "$BIN" 
+* **Trigger:** Presence of `"$DATA"` And presence `"$BIN"` 
 * **results:** Store both binaries and user data on the portable directory.
 
 **user C — Click and run**
-* **Trigger:** absence of "$DATA"  And absence of "$BIN" 
+* **Trigger:** absence of `"$DATA"` And absence of `"$BIN"` 
 * **results:** effectively just installs the application and executes it
 
-### 3.4 Declaring where is "$DATA"  and "$BIN" 
+### 3.4 Declaring `"$DATA"` and ``"$BIN"` though its contents
 ```
-├────────── [Portable Root]
-├── перевод       #"$DATA" 
+├────────── $PORTABLE_ROOT
+├── перевод       # `"$DATA"`
 │   ├──  cache
 │   ├── .cache
 │   ├── .config
@@ -142,38 +139,32 @@ burtjo@Linux:/media/burtjo/SSDpkg/packages/Discord$
 └── runner                          # one-click run application (Entry Point) # renameable
 8 directories, 1 file
 ```
-all flatpaks "$DATA"  directories, at some level, have some of these files, so we can infer "$DATA"  location by checking if there is more than 3 of this list of folders and hidden folders
+all flatpaks `"$DATA"`  directories, at some level, have some of these files, so we can confirm `$DATA` directory by checking if its contents have 3 or more list:
 (`cache`, `.cache`, `.config`, `config`, `data`, `.ld.so`, `.local`, `.nv`, `.pki`, `.var`)
 
 ```
-burtjo@Linux:/SSDpkg/packages/Program$ tree -a -L 2
-.
-├── двоичный       #"$BIN" 
+├────────── $PORTABLE_ROOT
+├── двоичный       # "$BIN" 
 │   ├── current -> x86_64/stable
 │   └── x86_64
 └── runner                          # one-click run application (Entry Point) # renameable
 └── перевод
 ```
-all flatpaks "$BIN"  directories have a (`x86_64`) folder and a and a symbolic link (`current`) -> (`x86_64/stable`)
-so its easy to check for those two.
+alternatively  flatpaks always include on `"$BIN"`, Directories a:
+(`x86_64`) folder
+and a: 
+(`current`) -> (`x86_64/stable`)
+symbolic link: 
+so if a directory contains those two we can confirm its it is the `"$BIN"` directory
 
-if "$DATA"  and "$BIN"  coulnt be determined using the method above we proceds with:**
-
-### 3.5 language assumptions
-
-*  they help you to install the application, and the system know what are the "$DATA"  and "$BIN"  locations.
-*  language assumptions help creating the necessary files for detection though the flatpak installation.
-*  after the files are installed, you have the freedom for changing and moving the names, "$DATA"  and "$BIN"  can now be determined by its contents normally.
-*  language assumptions are on by default. `dat`´ `data` `dados` are detected as the "$DATA" , `bin` `binaries` `binarios` as "$BIN" , # you should be free to control assumptions, by creating your own list or disabling completely
-
-## 3.6 contents aware system. No configuration,
+## 3.5 contents aware system. No configuration,
 
 *   The system should detect with no extra configuration needed, what the user wants to keep portable. through the presence or absence of directories or files, so users don’t need to edit config files or use the terminal.
 
 ```
-├────────── [Portable Root]
-├── executables
-│   ├── program stuff
+├────────── $PORTABLE_ROOT
+├── program
+│   ├── more program stuff
 │   │   ├── current -> x86_64/stable
 │   │   └── x86_64
 │   └── sister draws
@@ -187,17 +178,30 @@ if "$DATA"  and "$BIN"  coulnt be determined using the method above we proceds w
 │       └── .local
 └── runner                 # one-click run application (Entry Point) # renameable
 ```
-even this crazy setup, the system should be able to detect `eerm="$DATA" ` and `program stuff="$BIN" `
+even this crazy setup, the system should be able to detect `eerm="$DATA"` and `program stuff="$BIN"`
 
+now. if directories are empty `"$DATA"` and `"$BIN"`  couln't be determined by its contents using the method above, we proceds with:**
+
+### 3.6 language assumptions
+
+*  help you to install the application, and the system know what are the `"$DATA"`  and `"$BIN"`  directory locations.
+*  language assumptions are on by default. directories named (`dat`), (`data`) or (`dados`) are detected as the `"$DATA"`    
+* (`bin`) (`binaries`) (`binarios`) as `"$BIN"`
+*  you should be free to control assumptions, by creating your own list or disabling completely
+*  of more than one of those those for type,for `"$BIN"` or for `"$DATA"` exist, chose on alphabetic order the first directorie that is empty
+*  (e.g., `$PORTABLE_ROOT/bin/dat`) is naturally invalid, (e.g., `$PORTABLE_ROOT/$DATA/"$BIN"`) also is invalid. abort.
+*  (e.g., `$PORTABLE_ROOT/binaries/bin`) should validade the last  and not fire too early. aware of (e.g., `$PORTABLE_ROOT/$BIN/"$BIN"`) validade the last one.
+*  language assumptions should only be used if Declaring `"$DATA"` and `"$BIN"` through its contents, failed
 
 ## 4. My Stretch: Desktop Integration
 
-* naturally, installing flatpaks adds a desktop entry on your Desktop environment, we want to preserve this behavior by default. #you should be able to disable desktop integration. so you can only run the application by clicking the `runner`
+* naturally, installing flatpaks adds a desktop entry on your Desktop environment, we want to preserve this behavior by default. 
+* you should be able to disable desktop integration. so you can only run the application by clicking the `runner`
 
-*automatically applies a custom icon, by detecting by the presence of any images inside the `[Portable Root]` so you don’t have to edit anything manually
+*automatically applies a custom icon, by detecting by the presence of any images inside the `$PORTABLE_ROOT` so you don’t have to edit anything manually
 
 ```
-├────────── [Portable Root]
+├────────── $PORTABLE_ROOT
 ├── runner
 ├── stuff
 ├── icon        #lets supposed its a svg, but is has no extension, should work without any problem, **never depend exclusively file extension, .png .svg. ico. .jpg .jpeg or .webp
@@ -205,7 +209,7 @@ even this crazy setup, the system should be able to detect `eerm="$DATA" ` and `
 └── data
 ```
 
-by dragging any image on `[Portable Root]` we should automatically apply by editing the `icon=` line on the desktop file, specifically for flatpaks:
+by dragging any image on `$PORTABLE_ROOT` we should automatically apply by editing the `icon=` line on the desktop file, specifically for flatpaks:
 
 system wide
  `/var/lib/flatpak/exports/share/applications/$APPID`
@@ -213,9 +217,11 @@ or for a --user install at
  `~/.local/share/flatpak/exports/share/applications/$APPID`
 
 
- * users should also want to keep custom .desktop file and like everything here we should automatically by its presence, if the user don't want a desktop, just don't have it on [Portable Root]
+ * users may also want to keep custom .desktop file.
+ * like everything here we should automatically apply it by its presence.
+ * if you don't want a desktop file, just don't have any it on `$PORTABLE_ROOT`
 ```
-├────────── [Portable Root]
+├────────── $PORTABLE_ROOT
 ├── runner
 ├── stuff
 ├── icon.png       #lets say its a png, should work with any iamge format, never depend exclusively on detecting the file extension, .png .svg. ico. .jpg .jpeg or .webp
@@ -223,7 +229,56 @@ or for a --user install at
 ├── binaries/
 └── data/
 ```
-and of course, for icons, if a desktop file is already included on the [Portable Root] just edit this desktop file itself, no need to touch  `~/.local/share/flatpak/exports/share/applications/$APPID` or  `/var/lib/flatpak/exports/share/applications/$APPID`
+  * if a desktop file is already included on the $PORTABLE_ROOT just edit the `icon=` on this desktop file so.
+  * no need to touch  `~/.local/share/flatpak/exports/share/applications/$APPID` or  `/var/lib/flatpak/exports/share/applications/$APPID`
+
+
+### Automating permissions (optional, on by default)
+
+At launch time the runner evaluates the override file state:
+
+* **If `~/.local/share/flatpak/overrides/$APPID` does not exist or is empty**
+
+  * The runner writes the portable override into this location (if one is defined internally).
+  * This enables the required permissions for the portable app.
+
+* **If `~/.local/share/flatpak/overrides/$APPID` exists and is not empty**
+
+  * The runner reads it into memory.
+  * If the contents differ from the internally defined override, the runner prefers the existing user override and applies in-memory normalization only (see below).
+  * No file is duplicated or stored elsewhere.
+
+* **override files should be stored internally inside the own `runner`. so no annoying extra files or hidden files.**
+* **(e.g., so no "$PORTABLE_ROOT/.overrides/$APPID" this would be stupid)
+
+#### Path and username normalization
+
+For Migrating for distros like fedora that use /run/media or on a system with a new user name
+
+* Convert usernames and media mount inside paths:
+
+```
+/media/burtjo/... → /run/media/jason/...
+```
+
+**Example:**
+
+```
+[Context]
+devices=dri
+filesystems=/media/burtjo/SSD/SteamLIB;/media/burtjo/SSDpkg/Gaming/Steam
+```
+
+becomes
+
+```
+[Context]
+devices=dri
+filesystems=/run/media/jason/SSD/SteamLIB;/run/media/jason/SSDpkg/Gaming/Steam
+```
+
+The resulting content is written directly to
+`~/.local/share/flatpak/overrides/$APPID`.
 
 
 ### 5 Symlink Trick
@@ -238,246 +293,164 @@ and of course, for icons, if a desktop file is already included on the [Portable
  `/var/lib/flatpak/app/$APPID`
 
 * Using Symlinks to achieve Portable applications, Specifically Flatpaks by redirecting that location to the portable folder — without patching Flatpak.
+* This Symlinks method can be used for other package formats, but complexity can increase.
 
-### 6 Practical execution logic
+### 6 My practical execution logic
 
-0. **back to basics:** automatically Installs Flatpak and adds flathub to your distro
+0. **on your one click `run` the system should:**
 
-1. **Launch phase:** The user executes `runner` #should be renameable
+1. **automatically Installs Flatpak and adds flathub to your distro** # for flatpaks
 
-2. **the system computes its current absolute path (for [Portable Root] example `/media/user/USB/Games/Osu`:**
+2. **computes its current absolute path for** `$PORTABLE_ROOT` **example** `/media/user/USB/Games/Osu`
 
-3. **the system checks the aplication $APPID:**
-   * if the "$BIN"  was successfully check if $BIN/current/active/export/bin/$APPID exist, this location always has a file with the $APPID
-   * but if it dont exist. there are others ways to check for a $APPID bellow.
-   * valid $APPID's is a constant and unique identifier of the application consisting of the reverse-DNS format {tld}.{vendor}.{product}.
+3. **defines the** `"$DATA"` **and** `"$BIN"` **directories using the flatpaks contents aware method, or the language assumption if contents aware fail.**
+
+4. **defines a valid flathub** `$APPID`**:** 
+   * we need to define a `[VALID_APPID]` a constant and unique identifier of the application consisting of the reverse-DNS format {tld}.{vendor}.{product}.
+   
+5. **internal** `$APPID`**:** 
 ```
-├────────── [Portable Root]
-│   ├── двоичный
+├────────── $PORTABLE_ROOT
+├── runner         #AppID=$APPID
+├── $BIN
+└── $DATA
+```
+   * no extra files, `$APPID` its stored internally.
+   * check if `$BIN/current/active/export/bin/$APPID` exist, this location always has a file with the a `[VALID_APPID]` `$APPID`
+   * `$BIN/current/active/export/bin/$APPID` is supposed to always pass for a valid app id
+   * checking if the `$BIN/current/active/export/bin/$APPID` is `[VALID_APPID]` is usefull for debuging the `[VALID_APPID]` detection logic
+   * check if if `runner` name is a `[VALID_APPID]` and if is conflicting with the`$BIN/current/active/export/bin/$APPID`
+# the user can rename the `runner` for anything, including a flathub `$APPID` so is a easy way for us define the `$APPID`,
+   * if the `runner` file name is conflicting, rename the `runner` to the `$APPID` at `$BIN/current/active/export/bin/$APPID`
+   * as soon as a `[VALID_APPID]` is resolved, the internal `AppID=0` is overwritten to `AppID=$APPID`
+   * if `$BIN/current/active/export/bin/$APPID` dont exist. there are others ways to check for a `$APPID`:
+   * if internal `#AppID=0` and the `runner` file name. if its a `[VALID_APPID]` 
+   * if `$BIN/current/active/export/bin/$APPID` dont exist
+   * and the `$APPID` was a successfully found `[VALID_APPID]` though the `runner` name, the stored `$APPID` as, for example `AppID=0` will be overwritten to `AppID=$APPID`
+
+5. **internal** `$APPID`**:** 
+```
+├────────── $PORTABLE_ROOT
+├── $APPID     #AppID=$nonMatchingAPPID
+├── $BIN
+└── $DATA
+```
+
+   * if the `runner` name is a `$APPID` but its a different one from the internal, `runner` name is at a higher priority, it overwrites the internal app,
+   * expect if its conflicting with the `$BIN/current/active/export/bin/$APPID`
+   * if the `"$BIN"` was successfully found using the flatpaks contents aware method. 
+```
+├────────── $PossibleAPPID
+├── $PossibleAPPID
+│   ├── $PossibleAPPID
 │   │   ├── current -> x86_64/stable
 │   │   └── x86_64
 │   └── sister draws
-├── informations
+├── $PossibleAPPID
 │   ├── anything
-│   └── перевод
+│   └── $PossibleAPPID
 │       ├── cache
 │       ├── config
 │       ├── data
 │       ├── .ld.so
 │       └── .local
-└── runner       # runner here
+└── $PossibleAPPID       # runner here, AppID=0, by default (cache should be self contained, no extra files)
 ```
-since the user is free to name and move files, he could just not include the $APPID anywhere
-for correctly determening the $APPID we will store a value inside the runner
-```
-├────────── [Portable Root]
-│   ├── двоичный
-│   │   ├── current -> x86_64/stable
-│   │   └── x86_64
-│   └── sister draws
-├── informations
-│   ├── anything
-│   └── перевод
-│       ├── cache
-│       ├── config
-│       ├── data
-│       ├── .ld.so
-│       └── .local
-└── runner       # runner here, AppID=0, by default (cache should be self contained, no extra files)
-```
-but still on this case, we know `"$DATA" ` and `"$BIN" `, but the $APPID is stored as AppID=0 so the system cannot predict, so it will just abort
-   * if a $APPID is found conflicting with $APPID found in directories names, just abort,
+here are example for directories we check for a possible `$APPID`
 
-   ```
-├────────── [Portable Root]
-│   ├── двоичный
-│   │   ├── current -> x86_64/stable
-│   │   └── x86_64
-│   └── sister draws
-├── informations
-│   ├── anything
-│   └── перевод
-│       ├── cache
-│       ├── config
-│       ├── data
-│       ├── .ld.so
-│       └── .local
-└── $APPID       # runner here, AppID=0, by default (cache should be self contained, no extra files)
-```
-The user now change the `runner` name for a $APPID, if the internal $APPID equals to AppID=0 we will store the $APPID internally:
-   ```
-├────────── [Portable Root]
-│   ├── двоичный
-│   │   ├── current -> x86_64/stable
-│   │   └── x86_64
-│   └── sister draws
-├── informations
-│   ├── anything
-│   └── перевод
-│       ├── cache
-│       ├── config
-│       ├── data
-│       ├── .ld.so
-│       └── .local
-└── $APPID       # runner here, AppID=$APPID, by default (cache should be self contained, no extra files)
-```
-Now the $APPID is stored internally, the user is not free to rename the `runner` to anything he wants, for example:
-   ```
-├────────── [Portable Root]
-├── executables
-│   ├── двоичный
-│   │   ├── current -> x86_64/stable
-│   │   └── x86_64
-│   └── sister draws
-├── informations
-│   ├── anything
-│   └── перевод
-│       ├── cache
-│       ├── config
-│       ├── data
-│       ├── .ld.so
-│       └── .local
-└── execute       # runner here, AppID=$APPID, by default (cache should be self contained, no extra files)
-```
-app id can be determined by the internal `AppID=$APPID`
-   ```
-├────────── [Portable Root]
-├── executables
-│   ├── $APPID
-│   │   ├── current -> x86_64/stable
-│   │   └── x86_64
-│   └── sister draws
-├── $APPID
-│   ├── anything
-│   └── $APPID
-│       ├── cache
-│       ├── config
-│       ├── data
-│       ├── .ld.so
-│       └── .local
-└── $APPID       # runner here, AppID=0, by default (cache should be self contained, no extra files)
-```
-here are example places we check for possible $APPID
-   * $APPID, "$DATA"  and "$BIN"  folders cannot be searched more than two directories deep (e.g., `[Portable Path]/[things]/[stuff]/$APPID` is invalid by default).
-   * override if internal cached AppID=0 if $APPID is on located on the `runner` name. if the internal AppID= a non matching $APPID compared to the  `runner` name, launchs a pop up, is you aplication [AppID_X] OR [AppID_Y]?
+   * $APPID, `"$DATA"` and `"$BIN"`  folders cannot be searched more than two directories deep (e.g., `[Portable Path]/[things]/[stuff]/$APPID` is invalid by default).
    * aware of examples like org.telegram.desktop, .desktop is not a extension, its part of the $APPID,
    * aware of examples like `org.telegram.desktop.sh` or `org.telegram.desktop.py`, or even just `org.telegram.desktop` without any extension.
 ```
-burtjo@Linux:/SSDpkg/packages/$APPID$ tree -a -L 3
 .
-├── executables
-│   ├── $APPID
+├── $PossibleAPPID
+│   ├── $PossibleAPPID
 │   │   ├── current -> x86_64/stable
 │   │   └── x86_64
 │   └── sister draws
-├── informations
+├── $PossibleAPPID
 │   ├── anything
-│   └── $APPID
+│   └── $PossibleAPPID
 │       ├── cache
 │       ├── config
 │       ├── data
 │       ├── .ld.so
 │       └── .local
-└── $APPID        # runner here, another $APPID is cached internally, like AppID=$APPID by default it should be AppID=0 (cache should be self contained, no extra files)
+└── $PossibleAPPID        # runner here, another $APPID is cached internally, like AppID=$APPID by default it should be AppID=0 (cache should be self contained, no extra files)
 
 ```
-4. **Definitions:**
-   
-   * validades the $APPID
-   * Defines its own absoulte path as variable for $PORTABLE_ROOT
-   * Define [USER_MODE] for user install (default). or [SYSTEM_MODE] for system wide install
-   * Defines `$BIN_FLATPAK` variable if choosen user mode or system wide:
+w 
 
+7. **Definitions:**
+   
+   * after all of this, only after the `$APPID` is finally detected,
+   * Defines its own absoulte path as variable for `$PORTABLE_ROOT`
+   
+   * Define `[USER_MODE]` for user install (default). or `[SYSTEM_MODE]` for system wide install
      user mode at
      `$BIN_FLATPAK` = `~/.local/share/flatpak`. or for system wide `$BIN_FLATPAK` = `/var/lib/flatpak`.
      or for system wide at:
+   * Defines `$BIN_FLATPAK` variable if choosen user mode or system wide:
 
    * defines $BIN_TARGET for `$BIN_FLATPAK/app/$APPID`
-   * define if [DESKTOP_FILE] exist at [Portable Root] , can be defined at any plain at the text file with a header "[Desktop Entry]"
-   * if a desktop file is present on the [Portable Root] define $PORTABLE_ROOT/[DESKTOP_FILE] For $DESKTOP_FILE if a desktop file is present on the [Portable Root]
-   * if no [DESKTOP_FILE] is present on the [Portable Root]
-   * define $DESKTOP_FILE AS `$BIN_FLATPAK/exports/share/applications/$APPID.desktop`.
+   * define if `[DESKTOP_FILE]` exist at $PORTABLE_ROOT , can be defined at any plain at the text file with a header "[Desktop Entry]"
+   * if a desktop file is present on the $PORTABLE_ROOT define $PORTABLE_ROOT/[DESKTOP_FILE] For $DESKTOP_FILE if a desktop file is present on the $PORTABLE_ROOT
+   * if no `[DESKTOP_FILE]` is present on the $PORTABLE_ROOT
+   * define the `$DESKTOP_FILE` AS `$BIN_FLATPAK/exports/share/applications/$APPID.desktop`.
 
 
-   * defines user [OVERRIDES] (on by default) change overrides at `~/.local/share/flatpak/overrides/$APPID,` to cached inside the `runner` (no extra files), so its portable,
 
-* **Automating permissions** (optional, on by default) will be added before launching the application the permission override at for `~/.local/share/flatpak/overrides/$APPID `
-* **Importing and exporting Permissions**
-the system should be able to at launch import or export the flatpaks override at ~/.local/share/flatpak/overrides/$APPID at launch dinamically, it will export permission if:
-* the ~/.local/share/flatpak/overrides/$APPID file is empty or dont exist
-* if its not empty check the created/accessed/modified metadata and import the new overrides from ~/.local/share/flatpak/overrides/$APPID
-* applies user name conversions
-```
-burtjo@Linux:~/.local/share/flatpak/overrides$ cat com.valvesoftware.Steam
-[Context]
-devices=dri
-filesystems=/media/burtjo/SSD/SteamLIB;/media/burtjo/SSDpkg/Gaming/Steam
-```
-* gets converted to
-```
-jason@Linux:~/.local/share/flatpak/overrides$ cat com.valvesoftware.Steam
-[Context]
-devices=dri
-filesystems=/media/jason/SSD/SteamLIB;/media/jason/SSDpkg/Gaming/Steam
-```
-* applies /media or /run/media conversions
-```
-jason@Linux:~/.local/share/flatpak/overrides$ cat com.valvesoftware.Steam
-[Context]
-devices=dri
-filesystems=/run/media/jason/SSD/SteamLIB;/run/media/jason/SSDpkg/Gaming/Steam
-```
 
-3. **if Its alredy installed:**
+8. **if Its alredy installed:**
 
    * if it already is installed, compare how its installed with how its the `[Portable Path]` configuration. determined by the layout previously.
    * If `~/.var/app/$APPID` is a broken symlink (from a previous location), remove it.
    * if `~/.var/app/$APPID` its not a symlink and the user language assumption-
-   * check if the detected "$DATA"  from LANGAGE_INFERRING_"$DATA"  directories are empty
-   * if they are, move the data from `~/.var/app/$APPID/` to the LANGAGE_INFERRING_"$DATA"  directory,
+   * check if the detected `"$DATA"` from LANGAGE_INFERRING_`"$DATA"` directories are empty
+   * if they are, move the data from `~/.var/app/$APPID/` to the LANGAGE_INFERRING_`"$DATA"` directory,
    * be aware of `data/$APPID` `dados/$APPID` `dat/$APPID` setups as well,
    * and If `~/.var/app/$APPID` is a standard directory, rename it by appending a rotation suffix (e.g., `com.vendor.org` → `com.vendor.org1`) so the original is backed up. If `com.vendor.org1` already exists, rotate to `com.vendor.org2`, and so on
    * If `$BIN_TARGET` is a broken symlink (from a previous location), remove it.
    * If `$BIN_TARGET` is a functional symlink, delete it to prepare for a new link.
 
 
-4. **if its already installed at a oposing mode(sytem wide or user) other way around aware**
+9. **if its already installed at a oposing mode(sytem wide or user) other way around aware**
 
    * uninstall and reinstall to the right mode by default
    * i want to also experiment with
    * if `/var/lib/flatpak/app/$APPID`is not a broken symlink and it is a working directory or a working symlink,
-   * wipe internal `"$BIN" ` and move `$BIN_TARGET/x86_64` to `$BIN/` then symlink `"$BIN" /x86_64/stable` to `"$BIN" /current`
+   * wipe internal ``"$BIN"` ` and move `$BIN_TARGET/x86_64` to `$BIN/` then symlink ``"$BIN"` /x86_64/stable` to ``"$BIN"` /current`
    * if its not using a [LOCAL_DESKTOP_FILE] and DESKTOP_INTEGRATION=1
    * move `/var/lib/flatpak/app/$APPID/current/active/export/share/applications/$APPID` to `~/.local/share/flatpak/app/$APPID/current/active/export/share/applications/$APPID`
    * and symlink `~/.local/share/flatpak/app/$APPID/current/active/export/share/applications/$APPID` `~/.local/share/flatpak/exports/share/applications/$APPID`
    * or if its using a [LOCAL_DESKTOP_FILE] or DESKTOP_INTEGRATION=0
    * proceeds with the symlink
 
-5. **Linking**
+10. **Linking**
    * dinamically symlink what is needed based on the configuration of the directories layout
-   * Symlink `"$DATA" ` to `~/.var/app/$APPID`
-   * Symlink `"$BIN" ` to `$BIN_TARGET`
+   * Symlink ``"$DATA"`` to `~/.var/app/$APPID`
+   * Symlink ``"$BIN"` ` to `$BIN_TARGET`
    * Symlink `[LOCAL_DESKTOP_FILE]` to `[DESKTOP_FILE]`
 
-6. **if its not already installed**
+11. **if its not already installed**
    * install according to configuration
    * installs the application normally, flatpak install --user [APPID]
    * or system wide if was configured that way
 
-7. **icon phase:**
+12. **icon phase:**
    * if [ICON] exist
    * change the `[DESKTOP_FILE]` or `[LOCAL_DESKTOP_FILE]` (if it exists) `icon=` line to include the `[ICON]` absolute path
 
 
-8. **Execution phase:**
+13. **Execution phase:**
 
    * just before flatpak execution, you can have shell script for handling anything you want with the set variables
 **Example:** Importing Discord data from KDE to GNOME may seem broken until caches are cleared.
 ´´´
 Scripting area:
-rm -rf "$DATA" /cache
-rm -rf "$DATA" /.cache
-rm -rf "$DATA" /.ld.so
+rm -rf `"$DATA"`/cache
+rm -rf `"$DATA"`/.cache
+rm -rf `"$DATA"`/.ld.so
 ´´´
 
    * The runner runs `flatpak run $APPID`.
@@ -501,4 +474,4 @@ rm -rf "$DATA" /.ld.so
 * **Flatpak improvement:** While the symlink method can work great. It's not guaranteed that it will always work.
 So, I'm trying to keep it separate. The ideal portable program should automatically adapt for your setup. So on the future if Flatpak adds an option for changing the location of those directories paths, this theoretically could also work.
 
-One advantage of portable apps is offline installation. The current method relies mostly on downloading Flatpaks normally (online) and using symlinks for offloading. Offline Flatpak installation with just "$BIN"  files is complex and may be better with future Flatpak improvements, but this is not a core part of the approach today.
+One advantage of portable apps is offline installation. The current method relies mostly on downloading Flatpaks normally (online) and using symlinks for offloading. Offline Flatpak installation with just `"$BIN"`  files is complex and may be better with future Flatpak improvements, but this is not a core part of the approach today.
