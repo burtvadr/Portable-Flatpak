@@ -231,6 +231,29 @@ or for a --user install at
 ```
   * if a desktop file is already included on the $PORTABLE_ROOT just edit the `icon=` on this desktop file so.
   * no need to touch  `~/.local/share/flatpak/exports/share/applications/$APPID` or  `/var/lib/flatpak/exports/share/applications/$APPID`
+## 4.1 Portable folder icon integration
+
+The portable directory should visually represent the application by automatically applying an icon to the **folder itself** "$PORTABLE_ROOT".
+
+### Behavior
+
+At launch or initialization time, the runner selects a single image to represent the portable folder:
+
+* **Primary source:** any image located at the root of `$PORTABLE_ROOT`
+* **Fallback source:** the application icon exported by the Flatpak runtime at
+  `/$BIN/current/active/export/share/icons/hicolor/scalable/apps/$APPID.svg`
+
+The selected image is resolved to an absolute path. The icon must remain valid after the portable directory is relocated to a different mount point or system.
+
+### Nautilus integration model
+
+GNOME Files (Nautilus) supports per-directory custom icons through filesystem metadata. The runner applies the resolved image path as the directory’s custom icon so the folder consistently appears with the application icon in Nautilus views (grid, list, sidebar, recent locations).
+
+The icon assignment is metadata-based and does not modify the directory contents. Clearing this metadata restores the default folder appearance.
+
+### Portability constraints
+* Absolute paths must be recalculated when the portable directory is moved.
+* Icon metadata may be cached by Nautilus; visual updates are not guaranteed to be immediate.
 
 
 ### Automating permissions (optional, on by default)
